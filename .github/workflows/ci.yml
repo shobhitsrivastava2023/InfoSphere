@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18 # Use the Node.js version your project requires
+          cache: "npm"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Run tests (if you have tests)
+      - name: Run tests
+        run: npm test
+
+      # Run linting
+      - name: Run linting
+        run: npm run lint
+
+      # Run type-checking (if using TypeScript)
+      - name: Run type-checking
+        run: npm run type-check
