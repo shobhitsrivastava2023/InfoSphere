@@ -5,6 +5,7 @@ import { Circle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
 import { StarBorder } from "./star-border";
+import { ButtonColorful } from "./button-colorful";
 
 
 function ElegantShape({
@@ -191,9 +192,7 @@ function HeroGeometric({
                         <p className="text-base sm:text-lg md:text-xl text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto px-4">
                             Search Through Portals and Find Your Potential Clients with infosphere.  
                         </p>
-                    <StarBorder> 
-                    Will be launching soon 
-                    </StarBorder>
+                    <ButtonColorful />
                     </motion.div>
                 </div>
 

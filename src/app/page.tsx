@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <div> 
       <HeroSection />
-      this is some changes that i have done
+      
       
     </div>
   );
