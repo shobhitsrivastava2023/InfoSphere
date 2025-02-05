@@ -195,6 +195,7 @@ function HeroGeometric({
                     <ButtonColorful />
                     </motion.div>
                 </div>
+             
 
                 
             </div>
