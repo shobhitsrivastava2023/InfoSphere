@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "~/lib/utils";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion } from "framer-motion";
 import type React from "react";
 import { useEffect, useId, useState } from "react";
 import { Input } from "~/components/ui/input";
@@ -13,29 +13,77 @@ import {
   LoaderCircle,
   Mic,
 } from "lucide-react";
+import axios from 'axios'; // Import Axios
+import JobCard  from "../Components/JobCard";  // Import the JobCard component
+import { TextShimmer } from "~/components/ui/text-shimmer";
+
+const ITEMS_PER_PAGE = 8;  // Define the number of jobs per page
 
 const SearchRemoteJobs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const id = useId();
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState([]); // State for search results
+  const [error, setError] = useState(null);  // State for errors
+  const [showTextShimmer, setShowTextShimmer] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (inputValue) {
-      setIsLoading(true);
       const timer = setTimeout(() => {
-        setIsLoading(false);
       }, 500);
       return () => clearTimeout(timer);
     }
-    setIsLoading(false);
   }, [inputValue]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement search functionality here
-    console.log("Searching for:", searchQuery);
+    setSearchQuery(inputValue) // Update the searchQuery state
+    setIsLoading(true);
+    setShowTextShimmer(true);  // Show text shimmer on search
+    setError(null);
+    setCurrentPage(1); // Reset to first page on new search
+    try {
+      const response = await axios.get(`http://localhost:8000/search?query=${inputValue}&page=${currentPage}&limit=${ITEMS_PER_PAGE}`); // Replace with your backend URL
+      setSearchResults(response.data.jobs);
+      setTotalPages(response.data.totalPages);
+    } catch (err) {
+      setError(err.message || 'An error occurred while fetching data.');
+      setSearchResults([]); // Clear previous results on error
+      setTotalPages(1);
+    } finally {
+      setIsLoading(false);
+      setShowTextShimmer(false); // Hide text shimmer after search completes
+    }
   };
+
+  useEffect(() => {
+    // This useEffect is called when the page number changes, updating the search results
+    if (searchQuery) {  // Only fetch if there's a search query
+      const fetchSearchResults = async () => {
+        setIsLoading(true);
+        setError(null);
+        setShowTextShimmer(true);
+        try {
+          const response = await axios.get(`http://localhost:8000/search?query=${searchQuery}&page=${currentPage}&limit=${ITEMS_PER_PAGE}`);  // Added pagination
+          setSearchResults(response.data.jobs);
+          setTotalPages(response.data.totalPages);
+        } catch (err) {
+          setError(err.message || 'An error occurred while fetching data.');
+          setSearchResults([]);
+          setTotalPages(1);
+        } finally {
+          setIsLoading(false);
+          setShowTextShimmer(false);
+        }
+      };
+
+      fetchSearchResults();
+    }
+  }, [currentPage, searchQuery]);  // Dependency array includes currentPage and searchQuery
+
   const fadeUpVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: (i: number) => ({
@@ -48,6 +96,11 @@ const SearchRemoteJobs = () => {
       },
     }),
   };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
 
   return (
     <div className="min-h-screen bg-black py-6 text-gray-100 md:py-12">
@@ -78,8 +131,8 @@ const SearchRemoteJobs = () => {
               <div className="relative flex-grow">
                 <Input
                   id={id}
-                  className="peer h-12 w-full rounded-lg border-gray-700 bg-black/60 pe-9 ps-9 text-gray-400 backdrop-blur-sm transition-all duration-300 focus:border-blue-500"
-                  placeholder="Search jobs..."
+                  className="peer h-12 w-full rounded-lg border-gray-700 bg-black/10 pe-9 ps-9 text-gray-400 backdrop-blur-sm transition-all duration-300 focus:border-blue-500"
+                  placeholder="Try 'Software Developer'"
                   type="search"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -104,20 +157,60 @@ const SearchRemoteJobs = () => {
                 >
                   <Mic size={16} strokeWidth={2} aria-hidden="true" />
                 </button>
-              </div> 
+              </div>
               <div>
 
               </div>
-              
               <Button
                 type="submit"
                 className="h-12 w-full whitespace-nowrap rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-blue-700 sm:w-auto sm:px-6 sm:text-base md:px-8 md:text-lg"
               >
                 Search Jobs
               </Button>
-              
             </div>
           </form>
+          {error && <p className="text-red-500">Error: {error}</p>}
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">  {/* Results Container */}
+            {showTextShimmer ? (
+              <TextShimmer className='font-mono text-sm' duration={1}>
+                Scraping from credible sources ...
+              </TextShimmer>
+            ) : searchResults.length > 0 ? (
+              searchResults.map((job, index) => (
+                <JobCard key={index} job={job} />
+              ))
+            ) : (
+              searchQuery && !isLoading && <p>No results found for "{searchQuery}".</p>
+            )}
+          </div>
+
+          {/* Pagination Component */}
+          {searchResults.length > 0 && (
+            <div className="flex items-center justify-center space-x-2 py-4">
+              <Button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                variant="outline"
+                className="text-gray-400 hover:text-white"
+              >
+                Previous
+              </Button>
+
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <Button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                className="text-gray-400 hover:text-white"
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

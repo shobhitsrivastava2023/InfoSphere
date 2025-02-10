@@ -8,6 +8,10 @@
 # testing
 /coverage
 
+#backend
+venv/
+__pycache__/
+
 # database
 /prisma/db.sqlite
 /prisma/db.sqlite-journal
